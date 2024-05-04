@@ -5,8 +5,9 @@ account: scmn6p-andrew-bowen
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 11935789
-bundleId: 8576862
+bundleId: 8576877
 url: https://scmn6p-andrew-bowen.shinyapps.io/REMSDashboard/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: LICENSE|README.md
