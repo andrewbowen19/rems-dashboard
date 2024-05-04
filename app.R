@@ -13,26 +13,26 @@ library(dplyr)
 library(ggplot2)
 library(bslib)
 
-# TODO(abowen): replace with GitHub path
-df <- read_excel("rems-data.csv")
+
+df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv", as.is=TRUE)
 
 # Only keep numeric cols for scatter plot
-df_num <- df %>% select(where(is.numeric), -c(`Monitoring Year`,
-                                              `Program Office`,
-                                              `Operations Office`,
+df_num <- df %>% select(where(is.numeric), -c(`Monitoring.Year`,
+                                              `Program.Office`,
+                                              `Operations.Office`,
                                               `Site`,
-                                              `Reporting Organization`,
-                                              `Facility Type`,
-                                              `Labor Category`,
+                                              `Reporting.Organization`,
+                                              `Facility.Type`,
+                                              `Labor.Category`,
                                               `Occupation`,
-                                              `Monitoring Status`))
+                                              `Monitoring.Status`))
 print(df_num)
 
 
 ui <- page_sidebar(
   sidebar = sidebar(
-    varSelectInput("xvar", "X variable", df_num, selected = "Total Number Monitored"),
-    varSelectInput("yvar", "Y variable", df_num, selected = "Number with Meas. TED"),
+    varSelectInput("xvar", "X variable", df_num, selected = "Total.Number.Monitored"),
+    varSelectInput("yvar", "Y variable", df_num, selected = "Number.with.Meas..TED"),
     selectInput(
       "Site", "Filter by Site",
       choices = unique(df$Site),
@@ -55,7 +55,7 @@ server <- function(input, output, session) {
   
   output$scatter <- renderPlot({
     p <- ggplot(subsetted(), aes(!!input$xvar, !!input$yvar)) + list(theme(legend.position = "bottom"),
-      if (input$site) aes(color = `Program Office`),
+      if (input$site) aes(color = `Program.Office`),
       geom_point(),
       if (input$smooth) geom_smooth()
     )

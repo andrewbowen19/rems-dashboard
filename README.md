@@ -1,2 +1,2 @@
 # rems-dashboard
-Basic dashboard based on data from the DOE Radiation Exposure Monitoring System (REMS)
+[Basic shiny dashboard](https://scmn6p-andrew-bowen.shinyapps.io/REMSDashboard/) based on data from the DOE Radiation Exposure Monitoring System (REMS)
