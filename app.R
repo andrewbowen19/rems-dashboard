@@ -26,7 +26,7 @@ df_num <- df %>% select(where(is.numeric), -c(`Monitoring Year`,
                                               `Labor Category`,
                                               `Occupation`,
                                               `Monitoring Status`))
-
+# Set up sidebar
 ui <- page_sidebar(
   sidebar = sidebar(
     varSelectInput("xvar", "X variable", df_num, selected = "Total Number Monitored"),
@@ -34,10 +34,15 @@ ui <- page_sidebar(
     selectInput(
       "Site", "Filter by Site",
       choices = unique(df$Site),
-      selected =  "Los Alamos National Laboratory",
+      selected = "Los Alamos National Laboratory",
       multiple=TRUE
     ),
-    
+    selectInput(
+      "program_office", "Filter by Program Office",
+      choices = unique(df$`Program Office`),
+      selected = "National Nuclear Security Administration",
+      multiple=TRUE
+    ),
     hr(), # Add a horizontal rule
     checkboxInput("site", "Show Site", TRUE),
     checkboxInput("show_margins", "Show marginal plots", TRUE),
@@ -49,16 +54,19 @@ ui <- page_sidebar(
 server <- function(input, output, session) {
   subsetted <- reactive({
     req(input$Site)
-    df |> filter(Site %in% input$Site)
+    # Filter data based on user inputs
+    df |> filter(Site %in% input$Site & `Program Office` %in% input$program_office)
   })
   
   output$scatter <- renderPlot({
+    # Plot selected data
     p <- ggplot(subsetted(), aes(!!input$xvar, !!input$yvar)) + list(theme(legend.position = "bottom"),
       if (input$site) aes(color = `Program Office`),
       geom_point(),
       if (input$smooth) geom_smooth()
     )
     
+    # Add margins if necessary
     if (input$show_margins) {
       margin_type <- if (input$site) "density" else "histogram"
       p <- ggExtra::ggMarginal(p, type = margin_type, margins = "both",
