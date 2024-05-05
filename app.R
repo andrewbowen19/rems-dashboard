@@ -28,6 +28,7 @@ df_num <- df %>% select(where(is.numeric), -c(`Monitoring Year`,
                                               `Monitoring Status`))
 # Set up sidebar
 ui <- page_sidebar(
+  title="Radiation Exposure Monitoring System (REMS)",
   sidebar = sidebar(
     varSelectInput("xvar", "X variable", df_num, selected = "Total Number Monitored"),
     varSelectInput("yvar", "Y variable", df_num, selected = "Number with Meas. TED"),
@@ -48,6 +49,8 @@ ui <- page_sidebar(
     checkboxInput("show_margins", "Show marginal plots", TRUE),
     checkboxInput("smooth", "Add smoother"),
   ),
+  tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools",
+         "Data sourced from the Department of Energy's Radiation Exposure Query tool."),
   plotOutput("scatter")
 )
 
@@ -75,6 +78,8 @@ server <- function(input, output, session) {
     
     p
   }, res = 100)
+  
+  
 }
 
 shinyApp(ui, server)
