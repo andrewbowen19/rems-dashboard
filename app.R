@@ -13,8 +13,9 @@ library(dplyr)
 library(ggplot2)
 library(bslib)
 
-
-df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv", check.names=FALSE)
+# Read in dataset
+df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv", 
+               check.names=FALSE)
 
 # Only keep numeric cols for scatter plot
 df_num <- df %>% select(where(is.numeric), -c(`Monitoring Year`,
@@ -31,7 +32,7 @@ ui <- page_sidebar(
   title="Radiation Exposure Monitoring System (REMS)",
   sidebar = sidebar(
     varSelectInput("xvar", "X variable", df_num, selected = "Total Number Monitored"),
-    varSelectInput("yvar", "Y variable", df_num, selected = "Number with Meas. TED"),
+    varSelectInput("yvar", "Y variable", df_num, selected = "Average Meas. TED (mrem)"),
     selectInput(
       "Site", "Filter by Site",
       choices = unique(df$Site),
@@ -49,14 +50,22 @@ ui <- page_sidebar(
     checkboxInput("show_margins", "Show marginal plots", TRUE),
     checkboxInput("smooth", "Add smoother"),
   ),
+  fillable=FALSE,
   tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools",
          "Data sourced from the Department of Energy's Radiation Exposure Query tool."),
-  plotOutput("scatter")
+  plotOutput("scatter"),
+  plotOutput("timeSeries")
 )
 
 server <- function(input, output, session) {
   subsetted <- reactive({
     req(input$Site)
+    # Filter data based on user inputs
+    df |> filter(Site %in% input$Site & `Program Office` %in% input$program_office)
+  })
+  
+  subsettedTS <- reactive({
+    req(input$`Monitoring Year`)
     # Filter data based on user inputs
     df |> filter(Site %in% input$Site & `Program Office` %in% input$program_office)
   })
@@ -76,8 +85,19 @@ server <- function(input, output, session) {
                                size = 8, groupColour = input$site, groupFill = input$site)
     }
     
+    
     p
   }, res = 100)
+  print(subsettedTS)
+  # Add time series
+  output$timeSeries <- renderPlot({
+    p2 <- ggplot(subsettedTS(),
+                 aes(!!input$`Monitoring Year`,
+                     !!input$yvar))  + geom_line()
+
+    # return ts plot
+    p2
+  }, res=100)
   
   
 }
