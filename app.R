@@ -13,12 +13,11 @@ library(dplyr)
 library(ggplot2)
 library(bslib)
 
-
+# Read in dataset
 df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv", check.names=FALSE)
 
 # Only keep numeric cols for scatter plot
-df_num <- df %>% select(where(is.numeric), -c(`Monitoring Year`,
-                                              `Program Office`,
+df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
                                               `Operations Office`,
                                               `Site`,
                                               `Reporting Organization`,
@@ -27,59 +26,64 @@ df_num <- df %>% select(where(is.numeric), -c(`Monitoring Year`,
                                               `Occupation`,
                                               `Monitoring Status`))
 # Set up sidebar
-ui <- page_sidebar(
-  title="Radiation Exposure Monitoring System (REMS)",
-  sidebar = sidebar(
-    varSelectInput("xvar", "X variable", df_num, selected = "Total Number Monitored"),
-    varSelectInput("yvar", "Y variable", df_num, selected = "Number with Meas. TED"),
-    selectInput(
-      "Site", "Filter by Site",
-      choices = unique(df$Site),
-      selected = "Los Alamos National Laboratory",
-      multiple=TRUE
+ui <- fluidPage(
+  
+  # Application title
+  titlePanel("REMS"),
+  
+  sidebarLayout(
+    
+    # Sidebar with a slider input
+    sidebarPanel(
+      selectInput("site",
+                  "Site", unique(df$Site), "Savannah River Site", multiple=TRUE),
+      varSelectInput("xvar", "X variable", df_num, selected = "Total Number Monitored"),
+      varSelectInput("yvar", "Y variable", df_num, selected = "Number with Meas. TED"),
+      selectInput(
+        "program_office", "Filter by Program Office",
+        choices = unique(df$`Program Office`),
+        selected = "National Nuclear Security Administration",
+        multiple=TRUE
+      ),
+      hr(), # Add a horizontal rule
     ),
-    selectInput(
-      "program_office", "Filter by Program Office",
-      choices = unique(df$`Program Office`),
-      selected = "National Nuclear Security Administration",
-      multiple=TRUE
-    ),
-    hr(), # Add a horizontal rule
-    checkboxInput("site", "Show Site", TRUE),
-    checkboxInput("show_margins", "Show marginal plots", TRUE),
-    checkboxInput("smooth", "Add smoother"),
-  ),
-  tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools",
-         "Data sourced from the Department of Energy's Radiation Exposure Query tool."),
-  plotOutput("scatter")
+    
+    
+    
+    # Show a plot of the generated distribution
+    mainPanel(
+      plotOutput("scatter"),
+      plotOutput("timeSeries")
+    )
+  )
 )
 
 server <- function(input, output, session) {
   subsetted <- reactive({
-    req(input$Site)
+
     # Filter data based on user inputs
-    df |> filter(Site %in% input$Site & `Program Office` %in% input$program_office)
+    dat <- df %>% filter(Site %in% input$site & `Program Office` %in% input$program_office & `Monitoring Year`)
+    dat
   })
   
   output$scatter <- renderPlot({
     # Plot selected data
-    p <- ggplot(subsetted(), aes(!!input$xvar, !!input$yvar)) + list(theme(legend.position = "bottom"),
-      if (input$site) aes(color = `Program Office`),
-      geom_point(),
-      if (input$smooth) geom_smooth()
-    )
-    
-    # Add margins if necessary
-    if (input$show_margins) {
-      margin_type <- if (input$site) "density" else "histogram"
-      p <- ggExtra::ggMarginal(p, type = margin_type, margins = "both",
-                               size = 8, groupColour = input$site, groupFill = input$site)
-    }
-    
+    p <- ggplot(subsetted(), aes(!!input$xvar, !!input$yvar)) + geom_point()
+
     p
   }, res = 100)
+
   
+  # Plot time series
+  output$timeSeries <- renderPlot({
+    # Plot selected data
+
+    p <- subsetted() %>% group_by(`Monitoring Year`) %>% mutate(Total = sum(!!input$yvar)) %>%
+          ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line()
+    p
+  }, res = 100)
   
 }
 
 shinyApp(ui, server)
+
