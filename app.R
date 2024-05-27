@@ -46,6 +46,7 @@ ui <- fluidPage(
         multiple=TRUE
       ),
       hr(), # Add a horizontal rule
+      numericInput("year", 1986, 2022)
     ),
     
     
@@ -62,7 +63,7 @@ server <- function(input, output, session) {
   subsetted <- reactive({
 
     # Filter data based on user inputs
-    dat <- df %>% filter(Site %in% input$site & `Program Office` %in% input$program_office & `Monitoring Year`)
+    dat <- df %>% filter(Site %in% input$site & `Program Office` %in% input$program_office)
     dat
   })
   
