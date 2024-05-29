@@ -13,6 +13,7 @@ library(dplyr)
 library(ggplot2)
 library(bslib)
 library(ggExtra)
+library(glue)
 
 # Read in dataset
 df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
@@ -90,7 +91,7 @@ server <- function(input, output, session) {
     p <- subsetted() %>% 
       group_by(`Monitoring Year`) %>% 
       mutate(Total = sum(!!input$yvar)) %>%
-      ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line()
+      ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line() + labs(x="Year", y=glue("Total {input$yvar}"))
     p
   }, res = 100)
   
