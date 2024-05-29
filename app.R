@@ -14,7 +14,8 @@ library(ggplot2)
 library(bslib)
 
 # Read in dataset
-df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv", check.names=FALSE)
+df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
+               check.names=FALSE)
 
 # Only keep numeric cols for scatter plot
 df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
@@ -29,7 +30,7 @@ df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
 ui <- fluidPage(
   
   # Application title
-  titlePanel("REMS"),
+  titlePanel("Radiation Exposure Monitoring System Dashboard", windowTitle = "REMS Dashboard"),
   
   sidebarLayout(
     
@@ -38,7 +39,7 @@ ui <- fluidPage(
       selectInput("site",
                   "Site", unique(df$Site), "Savannah River Site", multiple=TRUE),
       varSelectInput("xvar", "X variable", df_num, selected = "Total Number Monitored"),
-      varSelectInput("yvar", "Y variable", df_num, selected = "Number with Meas. TED"),
+      varSelectInput("yvar", "Y variable", df_num, selected = "Average Meas. TED (mrem)"),
       selectInput(
         "program_office", "Filter by Program Office",
         choices = unique(df$`Program Office`),
@@ -46,23 +47,28 @@ ui <- fluidPage(
         multiple=TRUE
       ),
       hr(), # Add a horizontal rule
+      sliderInput("year", "Year Range", value = c(1986, 2022), min=1986, max=2022)
     ),
     
     
     
     # Show a plot of the generated distribution
     mainPanel(
+      tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools",
+             "All data sourced from the Department of Energy REMS Query Tool"),
       plotOutput("scatter"),
-      plotOutput("timeSeries")
+      plotOutput("timeSeries"),
+      tags$a(href="https://orise.orau.gov/cer/rems/definitions.pdf", "Definitions")
     )
   )
 )
 
 server <- function(input, output, session) {
   subsetted <- reactive({
-
     # Filter data based on user inputs
-    dat <- df %>% filter(Site %in% input$site & `Program Office` %in% input$program_office & `Monitoring Year`)
+    dat <- df %>% filter(Site %in% input$site &
+                        `Program Office` %in% input$program_office &
+                        `Monitoring Year` %in% seq(input$year[1], input$year[2]))
     dat
   })
   
@@ -73,13 +79,13 @@ server <- function(input, output, session) {
     p
   }, res = 100)
 
-  
   # Plot time series
   output$timeSeries <- renderPlot({
-    # Plot selected data
-
-    p <- subsetted() %>% group_by(`Monitoring Year`) %>% mutate(Total = sum(!!input$yvar)) %>%
-          ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line()
+    # Plot selected data summed over timeframe
+    p <- subsetted() %>% 
+      group_by(`Monitoring Year`) %>% 
+      mutate(Total = sum(!!input$yvar)) %>%
+      ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line()
     p
   }, res = 100)
   
