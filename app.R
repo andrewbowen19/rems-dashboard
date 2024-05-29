@@ -12,6 +12,7 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 library(bslib)
+library(ggExtra)
 
 # Read in dataset
 df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
@@ -46,11 +47,11 @@ ui <- fluidPage(
         selected = "National Nuclear Security Administration",
         multiple=TRUE
       ),
-      hr(), # Add a horizontal rule
-      sliderInput("year", "Year Range", value = c(1986, 2022), min=1986, max=2022)
+      sliderInput("year", "Year Range", value = c(1986, 2022), min=1986, max=2022),
+      checkboxInput("show_site", "Show Site", TRUE),
+      checkboxInput("show_margins", "Show marginal plots", TRUE),
+      tags$a(href="https://orise.orau.gov/cer/rems/definitions.pdf", "Definitions")
     ),
-    
-    
     
     # Show a plot of the generated distribution
     mainPanel(
@@ -58,7 +59,7 @@ ui <- fluidPage(
              "All data sourced from the Department of Energy REMS Query Tool"),
       plotOutput("scatter"),
       plotOutput("timeSeries"),
-      tags$a(href="https://orise.orau.gov/cer/rems/definitions.pdf", "Definitions")
+      
     )
   )
 )
@@ -75,8 +76,12 @@ server <- function(input, output, session) {
   output$scatter <- renderPlot({
     # Plot selected data
     p <- ggplot(subsetted(), aes(!!input$xvar, !!input$yvar)) + geom_point()
-
+    # Show marginal histograms if desired
+    p <- ggExtra::ggMarginal(p, type = "density", margins = "both",
+                             size = 8)#, groupColour = input$show_site, groupFill = input$show_site)
+    
     p
+
   }, res = 100)
 
   # Plot time series
