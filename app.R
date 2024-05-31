@@ -16,7 +16,7 @@ library(ggExtra)
 library(glue)
 
 # Read in dataset: return to Git link when pushed!!
-df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
+df <- read.csv("/Users/andrewbowen/sideProjects/rems-Dashboard/rems-data.csv", #"https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
                check.names=FALSE)
 
 # Only keep numeric cols for scatter plot
@@ -33,8 +33,8 @@ df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
 ui <- fluidPage(
   
   # Application title
-  titlePanel("Radiation Exposure Monitoring System Dashboard", windowTitle = "REMS Dashboard"),
-  
+  titlePanel("Radiation Exposure Monitoring System Dashboard", 
+             windowTitle = "REMS Dashboard"),
   sidebarLayout(
     
     # Sidebar with a slider input
