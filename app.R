@@ -113,7 +113,7 @@ server <- function(input, output, session) {
                    names_to="dose_type") %>%
       ggplot(aes(x=`Monitoring Year`, fill=dose_type)) + geom_bar() + labs(x="Year", 
                                                                            y="Collective Dose (Person-mrem)",
-                                                                           title="Total Effective Dose by Year")
+                                                                           title="Components of TED")
     p
   }, res = 100)
   
