@@ -10,6 +10,7 @@
 library(shiny)
 library(readxl)
 library(dplyr)
+library(tidyr)
 library(ggplot2)
 library(bslib)
 library(ggExtra)
@@ -33,8 +34,8 @@ df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
 ui <- fluidPage(
   
   # Application title
-  titlePanel("Radiation Exposure Monitoring System Dashboard", 
-             windowTitle = "REMS Dashboard"),
+  titlePanel("Radiation Exposure Monitoring System Dashboard", windowTitle = "REMS Dashboard"),
+  
   sidebarLayout(
     
     # Sidebar with a slider input
