@@ -10,12 +10,13 @@
 library(shiny)
 library(readxl)
 library(dplyr)
+library(tidyr)
 library(ggplot2)
 library(bslib)
 library(ggExtra)
 library(glue)
 
-# Read in dataset
+# Read in dataset: return to Git link when pushed!!
 df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
                check.names=FALSE)
 
@@ -28,6 +29,7 @@ df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
                                               `Labor Category`,
                                               `Occupation`,
                                               `Monitoring Status`))
+
 # Set up sidebar
 ui <- fluidPage(
   
@@ -59,7 +61,10 @@ ui <- fluidPage(
       tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools",
              "All data sourced from the Department of Energy REMS Query Tool"),
       plotOutput("scatter"),
+      hr(),
       plotOutput("timeSeries"),
+      hr(),
+      plotOutput("tedGraph"), 
       
     )
   )
@@ -91,7 +96,24 @@ server <- function(input, output, session) {
     p <- subsetted() %>% 
       group_by(`Monitoring Year`) %>% 
       mutate(Total = sum(!!input$yvar)) %>%
-      ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line() + labs(x="Year", y=glue("Total {input$yvar}"))
+      ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line() + labs(x="Year", 
+                                                                     y=glue("Total {input$yvar}"),
+                                                                     title=glue("Total {input$yvar} by Year"))
+    p
+  }, res = 100)
+  
+  # Plot total effective dose (TODO: check dose def/original dashboard)
+  output$tedGraph <- renderPlot({
+    p <- subsetted() %>%
+      select(`Monitoring Year`, 
+             photon=`Collective ED Photon (person-mrem)`, 
+             neutron=`Collective ED Neutron (person-mrem)`, 
+             CED=`Collective CED (person-mrem)`) %>%
+      pivot_longer(c(photon, neutron, CED), 
+                   names_to="dose_type") %>%
+      ggplot(aes(x=`Monitoring Year`, fill=dose_type)) + geom_bar() + labs(x="Year", 
+                                                                           y="Collective Dose (Person-mrem)",
+                                                                           title="Components of TED")
     p
   }, res = 100)
   
