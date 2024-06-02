@@ -17,7 +17,7 @@ library(ggExtra)
 library(glue)
 
 # Read in dataset: return to Git link when pushed!!
-df <- read.csv("/Users/andrewbowen/sideProjects/rems-Dashboard/rems-data.csv", #"https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
+df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
                check.names=FALSE)
 
 # Only keep numeric cols for scatter plot
