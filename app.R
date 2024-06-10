@@ -60,12 +60,12 @@ ui <- fluidPage(
     mainPanel(
       tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools",
              "All data sourced from the Department of Energy REMS Query Tool"),
-      plotOutput("scatter"),
-      hr(),
-      plotOutput("timeSeries"),
-      hr(),
-      plotOutput("tedGraph"), 
-      
+      tabsetPanel(tabPanel("Plots", plotOutput("scatter"),
+        hr(),
+        plotOutput("timeSeries"),
+        hr(),
+        plotOutput("tedGraph"), 
+      ))
     )
   )
 )
