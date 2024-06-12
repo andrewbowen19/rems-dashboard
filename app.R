@@ -15,6 +15,8 @@ library(ggplot2)
 library(bslib)
 library(ggExtra)
 library(glue)
+library(tsibble)
+library(fabletools)
 
 # Read in dataset: return to Git link when pushed!!
 df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
@@ -65,7 +67,8 @@ ui <- fluidPage(
         plotOutput("timeSeries"),
         hr(),
         plotOutput("tedGraph"), 
-      ))
+      ),
+      tabsetPanel(tabPanel("Time Series"), plotOutput("timeSeriesFable")))
     )
   )
 )
@@ -116,6 +119,16 @@ server <- function(input, output, session) {
                                                                            title="Components of TED")
     p
   }, res = 100)
+  
+  # Time Series creation
+  output$timeSeriesFable <- renderPlot({
+    rems_tsbl <- subsetted() %>% as_tsibble(index = `Monitoring Year`,
+                                            key=c("Program Office", "Operations Office",
+                                                  "Site", "Reporting Organization",
+                                                  "Facility Type", "Labor Category" ,
+                                                  "Occupation", "Monitoring Status"))
+    p <- rems_tsbl %>% autoplot(!!input$yvar)
+  }, res=100)
   
 }
 
