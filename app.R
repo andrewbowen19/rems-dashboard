@@ -8,6 +8,7 @@ library(ggExtra)
 library(glue)
 library(tsibble)
 library(fabletools)
+library(fable)
 
 # Read in dataset
 df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv", check.names=FALSE)
@@ -46,22 +47,16 @@ ui <- page_navbar(
               )
             )
   ),
-  nav_panel("Time Series",
-            sidebarLayout(
-              sidebar_content,
-              mainPanel(plotOutput("timeSeries"))
-            )
-  ),
   nav_panel("TED Segments",
             sidebarLayout(
               sidebar_content,
               mainPanel(plotOutput("tedGraph"))
             )
   ),
-  nav_panel("Time Series Fable",
+  nav_panel("Time Series",
             sidebarLayout(
               sidebar_content,
-              mainPanel(plotOutput("timeSeriesFable"))
+              mainPanel(plotOutput("timeSeriesForecast"))
             )
   )
 )
@@ -70,8 +65,17 @@ ui <- page_navbar(
 server <- function(input, output, session) {
   subsetted <- reactive({
     df %>% filter(Site %in% input$site &
-                    `Program Office` %in% input$program_office &
-                    `Monitoring Year` %in% seq(input$year[1], input$year[2]))
+                  `Program Office` %in% input$program_office &
+                  `Monitoring Year` %in% seq(input$year[1], input$year[2]))
+  })
+  
+  subsettedTS <- reactive({
+    df %>% filter(Site %in% input$site &
+                  `Program Office` %in% input$program_office &
+                  `Monitoring Year` %in% seq(input$year[1], input$year[2])) %>% as_tsibble(index = `Monitoring Year`,
+                      key=c("Program Office", "Operations Office", "Site", "Reporting Organization",
+                            "Facility Type", "Labor Category", "Occupation", "Monitoring Status")) %>% 
+      group_by(Site) %>% summarise(yvar = mean(!!input$yvar)) %>% fill_gaps()
   })
   
   output$scatter <- renderPlot({
@@ -81,32 +85,30 @@ server <- function(input, output, session) {
     }
     p
   }, res = 100)
-  
-  output$timeSeries <- renderPlot({
-    p <- subsetted() %>% 
-      group_by(`Monitoring Year`) %>% 
-      summarize(Total = sum(!!sym(input$yvar))) %>%
-      ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line() + labs(x="Year", y=glue("Total {input$yvar}"), title=glue("Total {input$yvar} by Year"))
-    p
-  }, res = 100)
+
   
   output$tedGraph <- renderPlot({
     p <- subsetted() %>%
-      select(`Monitoring Year`, photon=`Collective ED Photon (person-mrem)`, neutron=`Collective ED Neutron (person-mrem)`, CED=`Collective CED (person-mrem)`) %>%
+      select(`Monitoring Year`,
+             photon=`Collective ED Photon (person-mrem)`, 
+             neutron=`Collective ED Neutron (person-mrem)`, 
+             CED=`Collective CED (person-mrem)`) %>%
       pivot_longer(c(photon, neutron, CED), names_to="dose_type") %>%
       ggplot(aes(x=`Monitoring Year`, fill=dose_type)) + geom_bar(position="stack") + labs(x="Year", y="Collective Dose (Person-mrem)", title="Components of TED")
     p
   }, res = 100)
   
-  output$timeSeriesFable <- renderPlot({
-    rems_tsbl <- subsetted() %>% as_tsibble(index = `Monitoring Year`,
-                                            key=c("Program Office", "Operations Office", "Site", "Reporting Organization",
-                                                  "Facility Type", "Labor Category", "Occupation", "Monitoring Status")) %>% 
-      filter(`Program Office` == "National Nuclear Security Administration") %>% 
-      group_by(Site) %>% summarise(ted = mean(`Average Meas. TED (mrem)`))
-    p <- rems_tsbl %>% autoplot(ted)  + guides(colour = guide_legend(nrow = 10))
+  # Create TS forecast tab & plot with basic ARIMA model
+  output$timeSeriesForecast <- renderPlot({
+    p <- subsettedTS() %>%
+      model(ARIMA(yvar)) %>%
+      forecast(h = 10) %>%
+      autoplot(subsettedTS()) + labs(x = "Year",
+                                     y=input$yvar,
+                                     title="ARIMA Forecast")
+    
     p
-  }, res=100)
+  })
 }
 
 # Run the application 
