@@ -11,10 +11,19 @@ library(fabletools)
 library(fable)
 
 # Read in dataset
-df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv", check.names=FALSE)
+df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
+               check.names=FALSE)
 
 # Only keep numeric cols for scatter plot
-df_num <- df %>% select(where(is.numeric), -c(`Program Office`, `Operations Office`, `Site`, `Reporting Organization`, `Facility Type`, `Labor Category`, `Occupation`, `Monitoring Status`))
+df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
+                                              `Operations Office`,
+                                              `Site`,
+                                              `Reporting Organization`,
+                                              `Facility Type`,
+                                              `Labor Category`,
+                                              `Occupation`,
+                                              `Monitoring Status`))
+                                
 
 # Sidebar content
 sidebar_content <- sidebarPanel(
@@ -28,16 +37,9 @@ sidebar_content <- sidebarPanel(
   tags$a(href="https://orise.orau.gov/cer/rems/definitions.pdf", "Definitions")
 )
 
-timeSeriesSidebarContent <- sidebarPanel(
-  varSelectInput("tsYvar", "Y variable", df_num, selected = "Total Number Monitored"),
-  selectInput("program_office", "Filter by Program Office", choices = unique(df$`Program Office`), selected = "National Nuclear Security Administration", multiple=TRUE),
-  
-)
-
 # UI definition
 ui <- page_navbar(
   title = "Radiation Exposure Monitoring System Dashboard",
-  
   nav_panel("Plots",
             sidebarLayout(
               sidebar_content,
@@ -59,7 +61,7 @@ ui <- page_navbar(
             sidebarLayout(
               sidebar_content,
               mainPanel(plotOutput("timeSeriesForecast"))
-            )
+            ),
   )
 )
 
@@ -85,6 +87,26 @@ server <- function(input, output, session) {
     if (input$show_margins) {
       p <- ggExtra::ggMarginal(p, type = "density", margins = "both", size = 8)
     }
+
+    # Plot selected data
+    p <- ggplot(subsetted(), aes(!!input$xvar, !!input$yvar)) + geom_point()
+    # Show marginal histograms if desired
+    p <- ggExtra::ggMarginal(p, type = "density", margins = "both",
+                             size = 8)#, groupColour = input$show_site, groupFill = input$show_site)
+    
+    p
+
+  }, res = 100)
+
+  # Plot time series
+  output$timeSeries <- renderPlot({
+    # Plot selected data summed over timeframe
+    p <- subsetted() %>% 
+      group_by(`Monitoring Year`) %>% 
+      mutate(Total = sum(!!input$yvar)) %>%
+      ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line() + labs(x="Year", 
+                                                                     y=glue("Total {input$yvar}"),
+                                                                     title=glue("Total {input$yvar} by Year"))
     p
   }, res = 100)
   
