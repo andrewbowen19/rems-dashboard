@@ -43,6 +43,8 @@ ui <- page_navbar(
               sidebar_content,
               mainPanel(
                 plotOutput("scatter"),
+                plotOutput("xHist"),
+                plotOutput("yHist"),
                 tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools", "All data sourced from the Department of Energy REMS Query Tool")
               )
             )
@@ -83,6 +85,19 @@ server <- function(input, output, session) {
     if (input$show_margins) {
       p <- ggExtra::ggMarginal(p, type = "density", margins = "both", size = 8)
     }
+    p
+  }, res = 100)
+  
+  # Create X Var and Y Var histograms
+  output$xHist <- renderPlot({
+    p <- ggplot(subsetted(), aes_string(x = input$xvar)) + geom_histogram()
+
+    p
+  }, res = 100)
+  
+  output$yHist <- renderPlot({
+    p <- ggplot(subsetted(), aes_string(x = input$yvar)) + geom_histogram() + labs(x=input$yvar)
+    
     p
   }, res = 100)
 
