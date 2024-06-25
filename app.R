@@ -11,9 +11,8 @@ library(fabletools)
 library(fable)
 library(feasts)
 library(gridExtra)
-library(urca)
 
-# Read in dataset: return to Git link when pushed!!
+# Read in dataset
 df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
                check.names=FALSE)
 
@@ -26,11 +25,7 @@ df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
                                               `Labor Category`,
                                               `Occupation`,
                                               `Monitoring Status`))
-<<<<<<< HEAD
 
-# Set up sidebar
-=======
-                                
 
 # Sidebar content
 sidebar_content <- sidebarPanel(
@@ -45,25 +40,16 @@ sidebar_content <- sidebarPanel(
 )
 
 # UI definition
->>>>>>> 2244f63d5ebbd92effd6c820b891adfcd86859c0
 ui <- fluidPage(
   titlePanel("Radiation Exposure Monitoring System Dashboard"),
   sidebarLayout(
     sidebar_content,
     mainPanel(
       plotOutput("scatter"),
-<<<<<<< HEAD
-      hr(),
-      plotOutput("timeSeries"),
-      hr(),
-      plotOutput("tedGraph"), 
-      
-=======
       plotOutput("timeSeriesForecast"),
       plotOutput("barGraph"),
       tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools",
              "All data sourced from the Department of Energy REMS Query Tool")
->>>>>>> 2244f63d5ebbd92effd6c820b891adfcd86859c0
     )
   )
 )
@@ -74,8 +60,8 @@ server <- function(input, output, session) {
   subsetted <- reactive({
     print(input$yvar)
     df %>% filter(Site %in% input$site &
-                  `Program Office` %in% input$program_office &
-                  `Monitoring Year` %in% seq(input$year[1], input$year[2]))
+                    `Program Office` %in% input$program_office &
+                    `Monitoring Year` %in% seq(input$year[1], input$year[2]))
   })
   
   subsettedTS <- reactive({
@@ -84,8 +70,8 @@ server <- function(input, output, session) {
     key_cols <- c("Program Office", "Operations Office", "Site", "Reporting Organization",
                   "Facility Type", "Labor Category", "Occupation", "Monitoring Status")
     df %>% filter(Site %in% input$site &
-                  `Program Office` %in% input$program_office &
-                  `Monitoring Year` %in% seq(input$year[1], input$year[2])) %>% 
+                    `Program Office` %in% input$program_office &
+                    `Monitoring Year` %in% seq(input$year[1], input$year[2])) %>% 
       as_tsibble(index = `Monitoring Year`, key=key_cols) %>% 
       group_by(Site) %>% 
       summarise(yValue = mean(!!as.symbol(input$yvar))) %>%
@@ -100,38 +86,11 @@ server <- function(input, output, session) {
                              size = 8)#, groupColour = input$show_site, groupFill = input$show_site)
     
     p
-
+    
   }, res = 100)
   
-
-<<<<<<< HEAD
-  # Plot time series
-  output$timeSeries <- renderPlot({
-    # Plot selected data summed over timeframe
-    p <- subsetted() %>% 
-      group_by(`Monitoring Year`) %>% 
-      mutate(Total = sum(!!input$yvar)) %>%
-      ggplot(aes(x=`Monitoring Year`, y=Total)) + geom_line() + labs(x="Year", 
-                                                                     y=glue("Total {input$yvar}"),
-                                                                     title=glue("Total {input$yvar} by Year"))
-    p
-  }, res = 100)
   
-  # Plot total effective dose (TODO: check dose def/original dashboard)
-  output$tedGraph <- renderPlot({
-    p <- subsetted() %>%
-      select(`Monitoring Year`, 
-             photon=`Collective ED Photon (person-mrem)`, 
-             neutron=`Collective ED Neutron (person-mrem)`, 
-             CED=`Collective CED (person-mrem)`) %>%
-      pivot_longer(c(photon, neutron, CED), 
-                   names_to="dose_type") %>%
-      ggplot(aes(x=`Monitoring Year`, fill=dose_type)) + geom_bar() + labs(x="Year", 
-                                                                           y="Collective Dose (Person-mrem)",
-                                                                           title="Components of TED")
-    p
-=======
-
+  
   # Number of individuals with TED chart
   output$barGraph <- renderPlot({
     num_with_ted <- subsetted() %>% 
@@ -142,7 +101,7 @@ server <- function(input, output, session) {
     ced_avg <- subsetted() %>%
       group_by(`Monitoring Year`) %>%
       summarise(`Collective CED` = mean(`Collective CED (person-mrem)`))
-  
+    
     
     p1 <- num_with_ted %>% 
       ggplot(aes(x=`Monitoring Year`, 
@@ -153,10 +112,9 @@ server <- function(input, output, session) {
       labs(x="Year", 
            y ="Collective CED")
     grid.arrange(grobs=list(p1, p2), ncol=2)
->>>>>>> 2244f63d5ebbd92effd6c820b891adfcd86859c0
   }, res = 100)
   
-
+  
   
   # Create TS forecast tab & plot with basic ARIMA model
   output$timeSeriesForecast <- renderPlot({
