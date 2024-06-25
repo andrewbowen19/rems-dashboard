@@ -1,11 +1,15 @@
 name: REMSDashboard
-title: REMSDashboard
+title: rems-Dashboard
 username: scmn6p-andrew-bowen
 account: scmn6p-andrew-bowen
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 11935789
+<<<<<<< HEAD
 bundleId: 8690632
+=======
+bundleId: 8783915
+>>>>>>> 2244f63d5ebbd92effd6c820b891adfcd86859c0
 url: https://scmn6p-andrew-bowen.shinyapps.io/REMSDashboard/
 version: 1
 asMultiple: FALSE

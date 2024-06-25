@@ -1,12 +1,3 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
 library(shiny)
 library(readxl)
 library(dplyr)
@@ -15,6 +6,11 @@ library(ggplot2)
 library(bslib)
 library(ggExtra)
 library(glue)
+library(tsibble)
+library(fabletools)
+library(fable)
+library(feasts)
+library(gridExtra)
 
 # Read in dataset: return to Git link when pushed!!
 df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
@@ -29,54 +25,70 @@ df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
                                               `Labor Category`,
                                               `Occupation`,
                                               `Monitoring Status`))
+<<<<<<< HEAD
 
 # Set up sidebar
+=======
+                                
+
+# Sidebar content
+sidebar_content <- sidebarPanel(
+  selectInput("site", "Site", unique(df$Site), "Savannah River Site", multiple=TRUE),
+  varSelectInput("xvar", "X variable", df_num, selected = "Total Number Monitored"),
+  varSelectInput("yvar", "Y variable", df_num, selected = "Average Meas. TED (mrem)"),
+  selectInput("program_office", "Filter by Program Office", choices = unique(df$`Program Office`), selected = "National Nuclear Security Administration", multiple=TRUE),
+  sliderInput("year", "Year Range", value = c(1986, 2022), min=1986, max=2022),
+  checkboxInput("show_site", "Show Site", TRUE),
+  checkboxInput("show_margins", "Show marginal plots", TRUE),
+  tags$a(href="https://orise.orau.gov/cer/rems/definitions.pdf", "Definitions")
+)
+
+# UI definition
+>>>>>>> 2244f63d5ebbd92effd6c820b891adfcd86859c0
 ui <- fluidPage(
-  
-  # Application title
-  titlePanel("Radiation Exposure Monitoring System Dashboard", windowTitle = "REMS Dashboard"),
-  
+  titlePanel("Radiation Exposure Monitoring System Dashboard"),
   sidebarLayout(
-    
-    # Sidebar with a slider input
-    sidebarPanel(
-      selectInput("site",
-                  "Site", unique(df$Site), "Savannah River Site", multiple=TRUE),
-      varSelectInput("xvar", "X variable", df_num, selected = "Total Number Monitored"),
-      varSelectInput("yvar", "Y variable", df_num, selected = "Average Meas. TED (mrem)"),
-      selectInput(
-        "program_office", "Filter by Program Office",
-        choices = unique(df$`Program Office`),
-        selected = "National Nuclear Security Administration",
-        multiple=TRUE
-      ),
-      sliderInput("year", "Year Range", value = c(1986, 2022), min=1986, max=2022),
-      checkboxInput("show_site", "Show Site", TRUE),
-      checkboxInput("show_margins", "Show marginal plots", TRUE),
-      tags$a(href="https://orise.orau.gov/cer/rems/definitions.pdf", "Definitions")
-    ),
-    
-    # Show a plot of the generated distribution
+    sidebar_content,
     mainPanel(
-      tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools",
-             "All data sourced from the Department of Energy REMS Query Tool"),
       plotOutput("scatter"),
+<<<<<<< HEAD
       hr(),
       plotOutput("timeSeries"),
       hr(),
       plotOutput("tedGraph"), 
       
+=======
+      plotOutput("timeSeriesForecast"),
+      plotOutput("barGraph"),
+      tags$a(href="https://www.energy.gov/ehss/occupational-radiation-exposure-rems-system-tools",
+             "All data sourced from the Department of Energy REMS Query Tool")
+>>>>>>> 2244f63d5ebbd92effd6c820b891adfcd86859c0
     )
   )
 )
 
+# Server logic
 server <- function(input, output, session) {
+  
   subsetted <- reactive({
-    # Filter data based on user inputs
-    dat <- df %>% filter(Site %in% input$site &
-                        `Program Office` %in% input$program_office &
-                        `Monitoring Year` %in% seq(input$year[1], input$year[2]))
-    dat
+    print(input$yvar)
+    df %>% filter(Site %in% input$site &
+                  `Program Office` %in% input$program_office &
+                  `Monitoring Year` %in% seq(input$year[1], input$year[2]))
+  })
+  
+  subsettedTS <- reactive({
+    print("bar")
+    print(as.symbol(input$yvar))
+    key_cols <- c("Program Office", "Operations Office", "Site", "Reporting Organization",
+                  "Facility Type", "Labor Category", "Occupation", "Monitoring Status")
+    df %>% filter(Site %in% input$site &
+                  `Program Office` %in% input$program_office &
+                  `Monitoring Year` %in% seq(input$year[1], input$year[2])) %>% 
+      as_tsibble(index = `Monitoring Year`, key=key_cols) %>% 
+      group_by(Site) %>% 
+      summarise(yValue = mean(!!as.symbol(input$yvar))) %>%
+      fill_gaps()
   })
   
   output$scatter <- renderPlot({
@@ -89,7 +101,9 @@ server <- function(input, output, session) {
     p
 
   }, res = 100)
+  
 
+<<<<<<< HEAD
   # Plot time series
   output$timeSeries <- renderPlot({
     # Plot selected data summed over timeframe
@@ -115,9 +129,46 @@ server <- function(input, output, session) {
                                                                            y="Collective Dose (Person-mrem)",
                                                                            title="Components of TED")
     p
+=======
+
+  # Number of individuals with TED chart
+  output$barGraph <- renderPlot({
+    num_with_ted <- subsetted() %>% 
+      filter(`Monitoring Year` > 1988) %>%
+      group_by(`Monitoring Year`) %>%
+      summarise(`Number with TED` = sum(`Number with Meas. TED`))
+    
+    ced_avg <- subsetted() %>%
+      group_by(`Monitoring Year`) %>%
+      summarise(`Collective CED` = mean(`Collective CED (person-mrem)`))
+  
+    
+    p1 <- num_with_ted %>% 
+      ggplot(aes(x=`Monitoring Year`, 
+                 y = `Number with TED`)) + geom_bar(stat='identity') + 
+      labs(x="Year", 
+           y ="Number of Individuals with Measured TED")
+    p2 <-ced_avg %>%  ggplot(aes(x=`Monitoring Year`, y=`Collective CED`)) + geom_bar(stat='identity') + 
+      labs(x="Year", 
+           y ="Collective CED")
+    grid.arrange(grobs=list(p1, p2), ncol=2)
+>>>>>>> 2244f63d5ebbd92effd6c820b891adfcd86859c0
   }, res = 100)
   
+
+  
+  # Create TS forecast tab & plot with basic ARIMA model
+  output$timeSeriesForecast <- renderPlot({
+    p <- subsettedTS() %>%
+      model(ARIMA(yValue)) %>%
+      forecast(h = 10) %>%
+      autoplot(subsettedTS()) + labs(x = "Year",
+                                     y=input$yvar,
+                                     title="ARIMA Forecast")
+    
+    p
+  })
 }
 
-shinyApp(ui, server)
-
+# Run the application 
+shinyApp(ui = ui, server = server)
