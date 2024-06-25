@@ -11,6 +11,8 @@ library(fabletools)
 library(fable)
 library(feasts)
 library(gridExtra)
+library(urca)
+
 
 # Read in dataset
 df <- read.csv("https://raw.githubusercontent.com/andrewbowen19/rems-dashboard/main/rems-data.csv",
@@ -25,7 +27,7 @@ df_num <- df %>% select(where(is.numeric), -c(`Program Office`,
                                               `Labor Category`,
                                               `Occupation`,
                                               `Monitoring Status`))
-                                
+
 
 # Sidebar content
 sidebar_content <- sidebarPanel(
@@ -60,8 +62,8 @@ server <- function(input, output, session) {
   subsetted <- reactive({
     print(input$yvar)
     df %>% filter(Site %in% input$site &
-                  `Program Office` %in% input$program_office &
-                  `Monitoring Year` %in% seq(input$year[1], input$year[2]))
+                    `Program Office` %in% input$program_office &
+                    `Monitoring Year` %in% seq(input$year[1], input$year[2]))
   })
   
   subsettedTS <- reactive({
@@ -70,8 +72,8 @@ server <- function(input, output, session) {
     key_cols <- c("Program Office", "Operations Office", "Site", "Reporting Organization",
                   "Facility Type", "Labor Category", "Occupation", "Monitoring Status")
     df %>% filter(Site %in% input$site &
-                  `Program Office` %in% input$program_office &
-                  `Monitoring Year` %in% seq(input$year[1], input$year[2])) %>% 
+                    `Program Office` %in% input$program_office &
+                    `Monitoring Year` %in% seq(input$year[1], input$year[2])) %>% 
       as_tsibble(index = `Monitoring Year`, key=key_cols) %>% 
       group_by(Site) %>% 
       summarise(yValue = mean(!!as.symbol(input$yvar))) %>%
@@ -86,11 +88,11 @@ server <- function(input, output, session) {
                              size = 8)#, groupColour = input$show_site, groupFill = input$show_site)
     
     p
-
+    
   }, res = 100)
   
-
-
+  
+  
   # Number of individuals with TED chart
   output$barGraph <- renderPlot({
     num_with_ted <- subsetted() %>% 
@@ -101,7 +103,7 @@ server <- function(input, output, session) {
     ced_avg <- subsetted() %>%
       group_by(`Monitoring Year`) %>%
       summarise(`Collective CED` = mean(`Collective CED (person-mrem)`))
-  
+    
     
     p1 <- num_with_ted %>% 
       ggplot(aes(x=`Monitoring Year`, 
@@ -114,7 +116,7 @@ server <- function(input, output, session) {
     grid.arrange(grobs=list(p1, p2), ncol=2)
   }, res = 100)
   
-
+  
   
   # Create TS forecast tab & plot with basic ARIMA model
   output$timeSeriesForecast <- renderPlot({
