@@ -82,7 +82,7 @@ server <- function(input, output, session) {
   
   output$scatter <- renderPlot({
     # Plot selected data
-    p <- ggplot(subsetted(), aes(!!input$xvar, !!input$yvar)) + geom_point()
+    p <- ggplot(subsetted(), aes(!!input$xvar, !!input$yvar, color=`Program Office`)) + geom_point() + theme(legend.position = c(0.7, 0.7))
     # Show marginal histograms if desired
     p <- ggExtra::ggMarginal(p, type = "density", margins = "both",
                              size = 8)#, groupColour = input$show_site, groupFill = input$show_site)
